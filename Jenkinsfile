@@ -1,50 +1,36 @@
 pipeline {
     agent any
+
     stages {
-        stage('Install Dependencies') {
-            agent {
-                docker { image 'composer:2.5' }
-            }
+        stage('Diagnostik Internal Jenkins') {
             steps {
-                sh 'composer install --no-interaction --no-progress'
-                echo 'Instalasi dependensi selesai.'
-            }
-        }
-        stage('Run Unit Test') {
-            agent {
-                docker { image 'composer:2.5' }
-            }
-            steps {
-                sh 'composer test'
-            }
-            post {
-                success {
-                    echo 'Unit test berhasil!'
-                }
-                failure {
-                    echo 'Unit test gagal.'
-                }
-            }
-        }
-        stage('Build and Deploy') {
-            steps {
-                script {
-                    def appImage = docker.build('laprak8-image:latest')
+                echo 'Memulai proses diagnostik dari dalam Jenkins...'
 
-                    sh 'docker stop laprak8-live-app || true'
-                    sh 'docker rm laprak8-live-app || true'
+                sh 'echo "======================================================"'
+                sh 'echo "--- 1. Memeriksa User dan Grup ---"'
+                sh 'echo "Output di bawah ini menunjukkan ID user, grup, dan keanggotaan grup dari proses Jenkins."'
+                sh 'id'
 
-                    appImage.run('-d -p 8000:80 --name laprak8-live-app')
-                    
-                    echo 'Aplikasi berhasil di-deploy dan berjalan di http://localhost:8000'
-                }
+                sh 'echo "======================================================"'
+                sh 'echo "--- 2. Memeriksa Keberadaan Docker Socket ---"'
+                sh 'echo "Mencari file /var/run/docker.sock di dalam container..."'
+                sh 'ls -l /var/run/docker.sock'
+
+                sh 'echo "======================================================"'
+                sh 'echo "--- 3. Memeriksa PATH Environment Variable ---"'
+                sh 'echo "PATH menentukan di direktori mana shell mencari perintah."'
+                sh 'env | grep PATH'
+
+                sh 'echo "======================================================"'
+                sh 'echo "--- 4. Mencoba Menemukan Perintah docker ---"'
+                sh 'which docker || echo "Peringatan: Perintah docker TIDAK DITEMUKAN di PATH"'
+
+                sh 'echo "======================================================"'
+                sh 'echo "--- 5. Mencoba Menjalankan Perintah docker Secara Langsung ---"'
+                sh 'docker --version'
+                
+                echo 'Proses diagnostik selesai.'
             }
-        }
-    }
-    
-    post {
-        always {
-            echo 'Pipeline selesai.'
         }
     }
 }
